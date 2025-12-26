@@ -7,11 +7,9 @@ import { exportBarcode } from '@/lib/export-utils';
 import BarcodeControls from './BarcodeControls';
 import BarcodePreview from './BarcodePreview';
 import BatchGenerator from './BatchGenerator';
-import Footer from './Footer';
-import Navbar from './Navbar';
+import AboutSection from './AboutSection';
 
 const BARCODE_TYPES: { value: BarcodeType; label: string }[] = [
-  { value: 'qrcode', label: 'QR Code' },
   { value: 'code128', label: 'Code 128' },
   { value: 'code39', label: 'Code 39' },
   { value: 'ean13', label: 'EAN-13' },
@@ -142,8 +140,6 @@ export default function BarcodeGenerator() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-      <Navbar />
-      
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         {/* Hero Section */}
         <section id="generator" className="mb-16 text-center animate-fade-in">
@@ -158,7 +154,7 @@ export default function BarcodeGenerator() {
               Create Professional<br />Barcodes Instantly
             </h1>
             <p className="text-xl text-gray-600 dark:text-gray-400 max-w-3xl mx-auto mb-6 leading-relaxed">
-              Generate high-quality barcodes and QR codes in seconds. Export as PNG, JPEG, SVG, or PDF. 
+              Generate high-quality barcodes (Code 128, Code 39, EAN-13, UPC-A, and more) in seconds. Export as PNG, JPEG, SVG, or PDF. 
               No registration required.
             </p>
             <div className="flex flex-wrap items-center justify-center gap-4 text-sm text-gray-500 dark:text-gray-400">
@@ -227,10 +223,8 @@ export default function BarcodeGenerator() {
           />
         </section>
 
-        {/* Footer */}
-        <section id="services">
-          <Footer />
-        </section>
+        {/* About Section */}
+        <AboutSection />
       </div>
     </div>
   );

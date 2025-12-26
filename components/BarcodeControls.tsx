@@ -4,7 +4,7 @@ import { BarcodeConfig, BarcodeType, ExportFormat } from '@/lib/types';
 
 interface BarcodeControlsProps {
   config: BarcodeConfig;
-  barcodeTypes: { value: BarcodeType; label: string }[];
+  barcodeTypes?: { value: BarcodeType; label: string }[];
   onChange: (updates: Partial<BarcodeConfig>) => void;
   onExport: () => void;
   isGenerating: boolean;
@@ -56,11 +56,15 @@ export default function BarcodeControls({
             onChange={(e) => onChange({ type: e.target.value as BarcodeType })}
             className="w-full px-4 py-3 pl-10 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all appearance-none cursor-pointer"
           >
-            {barcodeTypes.map((type) => (
-              <option key={type.value} value={type.value}>
-                {type.label}
-              </option>
-            ))}
+            {barcodeTypes && barcodeTypes.length > 0 ? (
+              barcodeTypes.map((type) => (
+                <option key={type.value} value={type.value}>
+                  {type.label}
+                </option>
+              ))
+            ) : (
+              <option value={config.type}>{config.type}</option>
+            )}
           </select>
           <svg className="absolute right-3 top-1/2 -translate-y-1/2 w-5 h-5 text-gray-400 pointer-events-none" fill="none" viewBox="0 0 24 24" stroke="currentColor">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" />

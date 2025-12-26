@@ -1,25 +1,23 @@
 import type { Metadata, Viewport } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import "./globals.css";
 import { siteUrl, seoConfig } from "@/lib/seo-config";
 import { siteConfig } from "@/lib/config";
 import { ErrorBoundary } from "@/components/ErrorBoundary";
+import Header from "@/components/Header";
+import Footer from "@/components/Footer";
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
+const inter = Inter({
+  variable: "--font-inter",
   subsets: ["latin"],
-});
-
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
+  display: "swap",
 });
 
 export const metadata: Metadata = {
   metadataBase: new URL(siteUrl),
   title: {
     default: seoConfig.title,
-    template: "%s | Barcode Generator",
+    template: "%s | xotools",
   },
   description: seoConfig.description,
   keywords: seoConfig.keywords,
@@ -146,10 +144,12 @@ export default function RootLayout({
         />
       </head>
       <body
-        className={`${geistSans.variable} ${geistMono.variable} antialiased`}
+        className={`${inter.variable} antialiased`}
       >
         <ErrorBoundary>
+          <Header />
           {children}
+          <Footer />
         </ErrorBoundary>
       </body>
     </html>

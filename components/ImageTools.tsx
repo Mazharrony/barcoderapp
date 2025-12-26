@@ -2,14 +2,13 @@
 
 import { useState, useRef, useCallback } from 'react';
 import JSZip from 'jszip';
-import Navbar from './Navbar';
-import Footer from './Footer';
 import {
   compressImage,
   convertImageFormat,
   resizeImage,
   cropImage,
   imageToPDF,
+  heicToJpg,
   socialMediaPresets,
 } from '@/lib/image-utils';
 
@@ -81,6 +80,14 @@ export default function ImageTools() {
     if (files.length === 0) return;
     setIsProcessing(true);
     
+    // Reset processed state to show processing
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      processedBlob: undefined,
+      processedDataUrl: undefined,
+      error: undefined,
+    })));
+    
     const processed: ProcessedFile[] = [];
     for (const fileItem of files) {
       try {
@@ -108,6 +115,14 @@ export default function ImageTools() {
   const handleConvert = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    
+    // Reset processed state to show processing
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      processedBlob: undefined,
+      processedDataUrl: undefined,
+      error: undefined,
+    })));
     
     const processed: ProcessedFile[] = [];
     for (const fileItem of files) {
@@ -139,6 +154,14 @@ export default function ImageTools() {
   const handleResize = async () => {
     if (files.length === 0) return;
     setIsProcessing(true);
+    
+    // Reset processed state to show processing
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      processedBlob: undefined,
+      processedDataUrl: undefined,
+      error: undefined,
+    })));
     
     let width = resizeWidth;
     let height = resizeHeight;
@@ -267,20 +290,67 @@ export default function ImageTools() {
     if (files.length === 0) return;
     setIsProcessing(true);
     
+    // Reset processed state to show processing
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      processedBlob: undefined,
+      processedDataUrl: undefined,
+      error: undefined,
+    })));
+    
     try {
       const imageFiles = files.map(f => f.file);
       const pdfBlob = await imageToPDF(imageFiles[0], imageFiles);
       
-      const url = URL.createObjectURL(pdfBlob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `images-${Date.now()}.pdf`;
-      link.click();
-      URL.revokeObjectURL(url);
+      // Store result instead of auto-downloading
+      setFiles([{
+        id: `pdf-${Date.now()}`,
+        originalName: `images-${Date.now()}.pdf`,
+        file: new File([pdfBlob], `images-${Date.now()}.pdf`, { type: 'application/pdf' }),
+        processedBlob: pdfBlob,
+        processedDataUrl: undefined, // PDFs don't have image preview
+      }]);
     } catch (error) {
-      console.error('PDF creation failed:', error);
+      setFiles(prev => prev.map(f => ({
+        ...f,
+        error: error instanceof Error ? error.message : 'PDF creation failed',
+      })));
     }
     
+    setIsProcessing(false);
+  };
+
+  // HEIC to JPG
+  const handleHeicConvert = async () => {
+    if (files.length === 0) return;
+    setIsProcessing(true);
+    
+    // Reset processed state to show processing
+    setFiles(prev => prev.map(f => ({
+      ...f,
+      processedBlob: undefined,
+      processedDataUrl: undefined,
+      error: undefined,
+    })));
+    
+    const processed: ProcessedFile[] = [];
+    for (const fileItem of files) {
+      try {
+        const result = await heicToJpg(fileItem.file);
+        processed.push({
+          ...fileItem,
+          processedBlob: result.blob,
+          processedDataUrl: result.dataUrl,
+        });
+      } catch (error) {
+        processed.push({
+          ...fileItem,
+          error: error instanceof Error ? error.message : 'HEIC conversion failed',
+        });
+      }
+    }
+    
+    setFiles(processed);
     setIsProcessing(false);
   };
 
@@ -295,6 +365,10 @@ export default function ImageTools() {
     let extension = '';
     if (activeTool === 'converter') {
       extension = targetFormat === 'jpeg' ? '.jpg' : targetFormat === 'png' ? '.png' : '.webp';
+    } else if (activeTool === 'heic') {
+      extension = '.jpg';
+    } else if (activeTool === 'to-pdf') {
+      extension = '.pdf';
     } else {
       extension = fileItem.originalName.match(/\.[^.]+$/)?.[0] || '.jpg';
     }
@@ -316,9 +390,14 @@ export default function ImageTools() {
     const zip = new JSZip();
     for (const fileItem of processedFiles) {
       if (fileItem.processedBlob) {
-        const extension = activeTool === 'converter' 
-          ? (targetFormat === 'jpeg' ? '.jpg' : targetFormat === 'png' ? '.png' : '.webp')
-          : fileItem.originalName.match(/\.[^.]+$/)?.[0] || '.jpg';
+        let extension = '';
+        if (activeTool === 'converter') {
+          extension = targetFormat === 'jpeg' ? '.jpg' : targetFormat === 'png' ? '.png' : '.webp';
+        } else if (activeTool === 'heic') {
+          extension = '.jpg';
+        } else {
+          extension = fileItem.originalName.match(/\.[^.]+$/)?.[0] || '.jpg';
+        }
         const fileName = fileItem.originalName.replace(/\.[^.]+$/, '') + extension;
         zip.file(fileName, fileItem.processedBlob);
       }
@@ -362,8 +441,6 @@ export default function ImageTools() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-      <Navbar />
-      
       <div className="container mx-auto px-4 py-12 max-w-7xl">
         {/* Hero Section */}
         <section className="mb-12 text-center animate-fade-in">
@@ -719,11 +796,20 @@ export default function ImageTools() {
             )}
 
             {activeTool === 'heic' && (
-              <div className="p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                <p className="text-sm text-yellow-800 dark:text-yellow-200">
-                  HEIC conversion requires <code className="bg-yellow-100 dark:bg-yellow-900 px-1 rounded">heic2any</code> library. Please install the package.
-                </p>
-              </div>
+              <>
+                <div className="mb-6">
+                  <p className="text-sm text-gray-600 dark:text-gray-400 mb-4">
+                    Convert HEIC/HEIF images to JPEG format. Select one or more HEIC files to convert.
+                  </p>
+                </div>
+                <button
+                  onClick={handleHeicConvert}
+                  disabled={files.length === 0 || isProcessing}
+                  className="w-full py-3 px-6 bg-gradient-to-r from-blue-600 to-indigo-600 text-white rounded-xl font-bold hover:from-blue-700 hover:to-indigo-700 disabled:from-gray-400 disabled:to-gray-500 disabled:cursor-not-allowed transition-all shadow-lg"
+                >
+                  {isProcessing ? 'Converting...' : 'Convert HEIC to JPG'}
+                </button>
+              </>
             )}
 
             {activeTool === 'bg-remover' && (
@@ -754,15 +840,31 @@ export default function ImageTools() {
 
           {/* Preview/Results Panel */}
           <div className="lg:col-span-2 bg-white/90 dark:bg-gray-800/90 backdrop-blur-md rounded-3xl shadow-2xl border border-gray-200/60 dark:border-gray-700/60 p-8">
-            <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
-              <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
-                <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
-                </svg>
-              </div>
-              {isCropping ? 'Crop Image' : `Files (${files.length})`}
-            </h2>
+            <div className="flex items-center justify-between mb-6">
+              <h2 className="text-2xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                <div className="p-2 bg-green-100 dark:bg-green-900/30 rounded-lg">
+                  <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                  </svg>
+                </div>
+                {isCropping ? 'Crop Image' : `Files (${files.length})`}
+              </h2>
+              {isProcessing && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                  <span className="text-sm font-medium text-blue-700 dark:text-blue-300">Processing...</span>
+                </div>
+              )}
+              {!isProcessing && files.some(f => f.processedBlob) && (
+                <div className="flex items-center gap-2 px-4 py-2 bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg">
+                  <svg className="w-4 h-4 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                  </svg>
+                  <span className="text-sm font-medium text-green-700 dark:text-green-300">Ready to Download</span>
+                </div>
+              )}
+            </div>
 
             {isCropping && cropImageData ? (
               <div className="relative">
@@ -804,26 +906,58 @@ export default function ImageTools() {
             ) : (
               <>
                 <div className="space-y-4 max-h-[500px] overflow-y-auto mb-4">
-                  {files.map((fileItem) => (
+                  {files.map((fileItem) => {
+                    // Get preview URL - use processed if available, otherwise original
+                    const previewUrl = fileItem.processedDataUrl || (fileItem.file.type.startsWith('image/') ? URL.createObjectURL(fileItem.file) : null);
+                    
+                    return (
                     <div
                       key={fileItem.id}
-                      className="flex items-center gap-4 p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
+                      className="p-4 bg-gray-50 dark:bg-gray-700/50 rounded-xl border border-gray-200 dark:border-gray-600"
                     >
-                      <div className="flex-shrink-0">
-                        {fileItem.processedDataUrl ? (
-                          <img
-                            src={fileItem.processedDataUrl}
-                            alt="Preview"
-                            className="w-20 h-20 object-cover rounded-lg"
-                          />
-                        ) : (
-                          <div className="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center">
-                            <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                            </svg>
-                          </div>
-                        )}
-                      </div>
+                      {/* File Info Row */}
+                      <div className="flex items-center gap-4 mb-3">
+                        <div className="flex-shrink-0 relative">
+                          {fileItem.processedBlob && !fileItem.processedDataUrl && activeTool === 'to-pdf' ? (
+                            <>
+                              <div className="w-20 h-20 bg-green-100 dark:bg-green-900/30 rounded-lg flex items-center justify-center border-2 border-green-500 dark:border-green-400">
+                                <svg className="w-10 h-10 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                              </div>
+                              <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                </svg>
+                              </div>
+                            </>
+                          ) : previewUrl ? (
+                            <>
+                              <img
+                                src={previewUrl}
+                                alt="Preview"
+                                className={`w-20 h-20 object-cover rounded-lg border-2 ${fileItem.processedBlob ? 'border-green-500 dark:border-green-400' : 'border-gray-300 dark:border-gray-500'}`}
+                              />
+                              {fileItem.processedBlob && (
+                                <div className="absolute -top-1 -right-1 bg-green-500 rounded-full p-1">
+                                  <svg className="w-3 h-3 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" />
+                                  </svg>
+                                </div>
+                              )}
+                            </>
+                          ) : isProcessing ? (
+                            <div className="w-20 h-20 bg-blue-100 dark:bg-blue-900/30 rounded-lg flex items-center justify-center border-2 border-blue-300 dark:border-blue-700">
+                              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                            </div>
+                          ) : (
+                            <div className="w-20 h-20 bg-gray-200 dark:bg-gray-600 rounded-lg flex items-center justify-center border-2 border-gray-300 dark:border-gray-500">
+                              <svg className="w-8 h-8 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                              </svg>
+                            </div>
+                          )}
+                        </div>
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium text-gray-900 dark:text-white truncate">
                           {fileItem.originalName}
@@ -847,47 +981,90 @@ export default function ImageTools() {
                         {fileItem.processedBlob ? (
                           <button
                             onClick={() => handleDownload(fileItem)}
-                            className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors text-sm font-medium"
+                            className="px-4 py-2 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-lg hover:from-green-700 hover:to-emerald-700 transition-all text-sm font-medium flex items-center gap-2 shadow-md hover:shadow-lg"
                           >
+                            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                            </svg>
                             Download
                           </button>
+                        ) : isProcessing ? (
+                          <div className="px-4 py-2 text-sm text-blue-600 dark:text-blue-400 flex items-center gap-2">
+                            <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-600 dark:border-blue-400"></div>
+                            Processing...
+                          </div>
                         ) : (
                           <div className="px-4 py-2 text-sm text-gray-500 dark:text-gray-400">
-                            {isProcessing ? 'Processing...' : 'Ready'}
+                            Ready
                           </div>
                         )}
                         <button
                           onClick={() => removeFile(fileItem.id)}
                           className="p-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 rounded-lg transition-colors"
+                          title="Remove file"
                         >
                           <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
                           </svg>
                         </button>
                       </div>
+                      </div>
+                      
+                      {/* Large Preview Section */}
+                      {previewUrl && fileItem.file.type.startsWith('image/') && (
+                        <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-600">
+                          <p className="text-xs font-semibold text-gray-600 dark:text-gray-400 mb-2">
+                            {fileItem.processedBlob ? 'Processed Preview' : 'Original Preview'}
+                          </p>
+                          <div className="relative rounded-lg overflow-hidden border-2 border-gray-200 dark:border-gray-600 bg-gray-100 dark:bg-gray-800">
+                            <img
+                              src={previewUrl}
+                              alt="Full Preview"
+                              className="w-full h-auto max-h-64 object-contain"
+                            />
+                            {fileItem.processedBlob && (
+                              <div className="absolute top-2 right-2 bg-green-500 text-white px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1">
+                                <svg className="w-3 h-3" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                                </svg>
+                                Processed
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                      )}
                     </div>
-                  ))}
+                    );
+                  })}
                 </div>
                 {files.some(f => f.processedBlob) && (
-                  <button
-                    onClick={handleDownloadAll}
-                    className="w-full py-3 px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg flex items-center justify-center gap-2"
-                  >
-                    <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
-                    </svg>
-                    Download All as ZIP
-                  </button>
+                  <div className="mt-4 p-4 bg-gradient-to-r from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20 rounded-xl border-2 border-green-200 dark:border-green-800">
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-green-600 dark:text-green-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
+                        </svg>
+                        <span className="text-sm font-semibold text-green-800 dark:text-green-200">
+                          {files.filter(f => f.processedBlob).length} file{files.filter(f => f.processedBlob).length !== 1 ? 's' : ''} processed successfully
+                        </span>
+                      </div>
+                    </div>
+                    <button
+                      onClick={handleDownloadAll}
+                      className="w-full py-3 px-6 bg-gradient-to-r from-green-600 to-emerald-600 text-white rounded-xl font-bold hover:from-green-700 hover:to-emerald-700 transition-all shadow-lg hover:shadow-xl flex items-center justify-center gap-2 transform hover:scale-105"
+                    >
+                      <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" />
+                      </svg>
+                      Download All as ZIP
+                    </button>
+                  </div>
                 )}
               </>
             )}
           </div>
         </div>
 
-        {/* Footer */}
-        <section id="services">
-          <Footer />
-        </section>
       </div>
     </div>
   );

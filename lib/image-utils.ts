@@ -273,11 +273,39 @@ export async function pdfToImage(file: File): Promise<{ blob: Blob; dataUrl: str
 
 // HEIC to JPG (requires heic2any library)
 export async function heicToJpg(file: File): Promise<{ blob: Blob; dataUrl: string }> {
-  // Note: HEIC conversion requires heic2any library
-  // This is a placeholder
-  return new Promise((resolve, reject) => {
-    reject(new Error('HEIC conversion requires heic2any library. Please install heic2any package.'));
-  });
+  try {
+    // Dynamically import heic2any to avoid SSR issues
+    const heic2any = (await import('heic2any')).default;
+    
+    // Convert HEIC to JPEG
+    const convertedBlob = await heic2any({
+      blob: file,
+      toType: 'image/jpeg',
+      quality: 0.92,
+    });
+    
+    // heic2any can return a single Blob or an array of Blobs
+    const resultBlob = Array.isArray(convertedBlob) ? convertedBlob[0] : convertedBlob;
+    
+    // Convert blob to data URL for preview
+    const dataUrl = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader();
+      reader.onload = () => resolve(reader.result as string);
+      reader.onerror = () => reject(new Error('Failed to read converted image'));
+      reader.readAsDataURL(resultBlob);
+    });
+    
+    return {
+      blob: resultBlob,
+      dataUrl,
+    };
+  } catch (error) {
+    throw new Error(
+      error instanceof Error 
+        ? `HEIC conversion failed: ${error.message}` 
+        : 'HEIC conversion failed. Please ensure the file is a valid HEIC/HEIF image.'
+    );
+  }
 }
 
 // Social media presets

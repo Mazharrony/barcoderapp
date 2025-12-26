@@ -2,8 +2,6 @@
 
 import { useState } from 'react';
 import { siteConfig } from '@/lib/config';
-import Navbar from './Navbar';
-import Footer from './Footer';
 
 export default function ContactPage() {
   const [formData, setFormData] = useState({
@@ -29,8 +27,6 @@ export default function ContactPage() {
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 dark:from-gray-900 dark:via-slate-900 dark:to-indigo-950">
-      <Navbar />
-      
       <div className="container mx-auto px-4 py-16 max-w-4xl">
         {/* Header */}
         <div className="text-center mb-12 animate-fade-in">
@@ -129,6 +125,26 @@ export default function ContactPage() {
                 </a>
               </div>
             </div>
+
+            {/* PayPal Donation */}
+            <div className="pt-8 border-t border-gray-200 dark:border-gray-800">
+              <h3 className="font-semibold text-gray-900 dark:text-white mb-4">Support This Project</h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4 text-sm">
+                If you find these tools helpful, consider supporting the project with a donation.
+              </p>
+              <a
+                href={siteConfig.paypalLink}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center gap-3 px-4 py-3 bg-[#0070ba] text-white rounded-xl hover:bg-[#005ea6] transition-all font-semibold"
+                aria-label="PayPal Donation"
+              >
+                <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 24 24">
+                  <path d="M7.076 21.337H2.47a.641.641 0 0 1-.633-.74L4.944.901C5.026.382 5.474 0 5.998 0h7.46c2.57 0 4.578.543 5.69 1.81 1.01 1.15 1.304 2.42 1.012 4.287-.023.143-.047.288-.077.437-.983 5.05-4.349 6.797-8.647 6.797h-2.19c-.524 0-.968.382-1.05.9l-1.12 7.203zm14.146-14.42a.543.543 0 0 0-.414-.205h-3.74c-.235 0-.44.168-.488.4l-.747 4.8c-.048.235.12.46.355.46h3.77c.235 0 .44-.168.488-.4l.747-4.8a.543.543 0 0 0-.073-.455z"/>
+                </svg>
+                <span>Donate via PayPal</span>
+              </a>
+            </div>
           </div>
 
           {/* Contact Form */}
@@ -184,7 +200,6 @@ export default function ContactPage() {
         </div>
       </div>
 
-      <Footer />
     </div>
   );
 }
