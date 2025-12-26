@@ -656,8 +656,6 @@ export default function PDFTools() {
                             link.href = url;
                             const suffix = activeTool === 'merge' ? '-merged' : 
                                          activeTool === 'compress' ? '-optimized' :
-                                         activeTool === 'lock' ? '-locked' :
-                                         activeTool === 'unlock' ? '-unlocked' :
                                          activeTool === 'page-numbers' ? '-numbered' :
                                          activeTool === 'rotate' ? '-rotated' : '-processed';
                             link.download = fileItem.name.replace('.pdf', `${suffix}.pdf`);
