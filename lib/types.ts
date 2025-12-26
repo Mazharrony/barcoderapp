@@ -12,6 +12,17 @@ export type BarcodeType =
 
 export type ExportFormat = 'png' | 'jpeg' | 'svg' | 'pdf';
 
+export type QRErrorCorrectionLevel = 'L' | 'M' | 'Q' | 'H';
+
+export type QRDotType = 'square' | 'rounded' | 'dots';
+
+export interface QRCodeConfig {
+  errorCorrectionLevel: QRErrorCorrectionLevel;
+  qrSize: number;
+  dotType: QRDotType;
+  quietZone: number;
+}
+
 export interface BarcodeConfig {
   type: BarcodeType;
   value: string;
@@ -24,6 +35,8 @@ export interface BarcodeConfig {
   lineColor: string;
   margin: number;
   format: ExportFormat;
+  // QR Code specific options
+  qrConfig?: QRCodeConfig;
 }
 
 export interface BatchItem {

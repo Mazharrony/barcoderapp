@@ -58,6 +58,7 @@ export default function BarcodePreview({
                 src={dataUrl}
                 alt="Barcode preview"
                 className="max-w-full h-auto rounded-lg"
+                style={{ imageRendering: 'crisp-edges' }}
               />
             </div>
             <button

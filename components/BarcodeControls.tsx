@@ -94,40 +94,187 @@ export default function BarcodeControls({
       </div>
 
       {/* Dimensions */}
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
-          </svg>
-          Dimensions
-        </label>
-        <div className="grid grid-cols-2 gap-4">
+      {config.type === 'qrcode' ? (
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            QR Code Size
+          </label>
           <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Width</label>
+            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Size (px)</label>
             <input
               type="number"
-              min="1"
-              max="5"
-              step="0.1"
-              value={config.width}
-              onChange={(e) => onChange({ width: parseFloat(e.target.value) || 2 })}
+              min="200"
+              max="1000"
+              step="50"
+              value={config.qrConfig?.qrSize || 400}
+              onChange={(e) => onChange({
+                qrConfig: {
+                  ...config.qrConfig,
+                  qrSize: parseInt(e.target.value) || 400,
+                  errorCorrectionLevel: config.qrConfig?.errorCorrectionLevel || 'M',
+                  dotType: config.qrConfig?.dotType || 'square',
+                  quietZone: config.qrConfig?.quietZone ?? 4,
+                }
+              })}
               className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
             />
-          </div>
-          <div>
-            <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Height (px)</label>
-            <input
-              type="number"
-              min="50"
-              max="300"
-              step="10"
-              value={config.height}
-              onChange={(e) => onChange({ height: parseInt(e.target.value) || 100 })}
-              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-            />
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              Recommended: 400-600px for best quality
+            </p>
           </div>
         </div>
-      </div>
+      ) : (
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8V4m0 0h4M4 4l5 5m11-1V4m0 0h-4m4 0l-5 5M4 16v4m0 0h4m-4 0l5-5m11 5l-5-5m5 5v-4m0 4h-4" />
+            </svg>
+            Dimensions
+          </label>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Width</label>
+              <input
+                type="number"
+                min="1"
+                max="5"
+                step="0.1"
+                value={config.width}
+                onChange={(e) => onChange({ width: parseFloat(e.target.value) || 2 })}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+            <div>
+              <label className="block text-xs text-gray-500 dark:text-gray-400 mb-1.5">Height (px)</label>
+              <input
+                type="number"
+                min="50"
+                max="300"
+                step="10"
+                value={config.height}
+                onChange={(e) => onChange({ height: parseInt(e.target.value) || 100 })}
+                className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* QR Code Specific Options */}
+      {config.type === 'qrcode' && (
+        <>
+          {/* Error Correction Level */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+              </svg>
+              Error Correction Level
+            </label>
+            <div className="grid grid-cols-4 gap-2">
+              {(['L', 'M', 'Q', 'H'] as const).map((level) => (
+                <button
+                  key={level}
+                  onClick={() => onChange({
+                    qrConfig: {
+                      ...config.qrConfig,
+                      errorCorrectionLevel: level,
+                      qrSize: config.qrConfig?.qrSize || 400,
+                      dotType: config.qrConfig?.dotType || 'square',
+                      quietZone: config.qrConfig?.quietZone ?? 4,
+                    }
+                  })}
+                  className={`px-3 py-2.5 rounded-xl font-semibold text-sm transition-all ${
+                    config.qrConfig?.errorCorrectionLevel === level
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-102'
+                  }`}
+                  title={
+                    level === 'L' ? 'Low (~7% damage recovery)' :
+                    level === 'M' ? 'Medium (~15% damage recovery)' :
+                    level === 'Q' ? 'Quartile (~25% damage recovery)' :
+                    'High (~30% damage recovery)'
+                  }
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+            <p className="mt-2 text-xs text-gray-500 dark:text-gray-400">
+              {config.qrConfig?.errorCorrectionLevel === 'L' && 'Low: ~7% damage recovery - Smallest size'}
+              {config.qrConfig?.errorCorrectionLevel === 'M' && 'Medium: ~15% damage recovery - Recommended'}
+              {config.qrConfig?.errorCorrectionLevel === 'Q' && 'Quartile: ~25% damage recovery - Good balance'}
+              {config.qrConfig?.errorCorrectionLevel === 'H' && 'High: ~30% damage recovery - Maximum reliability'}
+            </p>
+          </div>
+
+          {/* Dot Type */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 21a4 4 0 01-4-4V5a2 2 0 012-2h4a2 2 0 012 2v12a4 4 0 01-4 4zm0 0h12a2 2 0 002-2v-4a2 2 0 00-2-2h-2.343M11 7.343l1.657-1.657a2 2 0 012.828 0l2.829 2.829a2 2 0 010 2.828l-8.486 8.485M7 17h.01" />
+              </svg>
+              Dot Style
+            </label>
+            <div className="grid grid-cols-3 gap-2">
+              {(['square', 'rounded', 'dots'] as const).map((dotType) => (
+                <button
+                  key={dotType}
+                  onClick={() => onChange({
+                    qrConfig: {
+                      ...config.qrConfig,
+                      dotType: dotType,
+                      errorCorrectionLevel: config.qrConfig?.errorCorrectionLevel || 'M',
+                      qrSize: config.qrConfig?.qrSize || 400,
+                      quietZone: config.qrConfig?.quietZone ?? 4,
+                    }
+                  })}
+                  className={`px-3 py-2.5 rounded-xl font-semibold text-sm transition-all capitalize ${
+                    config.qrConfig?.dotType === dotType
+                      ? 'bg-gradient-to-r from-blue-600 to-indigo-600 text-white shadow-lg shadow-blue-500/30 scale-105'
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-200 dark:hover:bg-gray-600 hover:scale-102'
+                  }`}
+                >
+                  {dotType}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Quiet Zone */}
+          <div>
+            <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+              </svg>
+              Quiet Zone (Margin)
+            </label>
+            <input
+              type="number"
+              min="0"
+              max="10"
+              step="1"
+              value={config.qrConfig?.quietZone ?? 4}
+              onChange={(e) => onChange({
+                qrConfig: {
+                  ...config.qrConfig,
+                  quietZone: parseInt(e.target.value) || 4,
+                  errorCorrectionLevel: config.qrConfig?.errorCorrectionLevel || 'M',
+                  qrSize: config.qrConfig?.qrSize || 400,
+                  dotType: config.qrConfig?.dotType || 'square',
+                }
+              })}
+              className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+            />
+            <p className="mt-1.5 text-xs text-gray-500 dark:text-gray-400">
+              Recommended: 4 modules (standard QR code margin)
+            </p>
+          </div>
+        </>
+      )}
 
       {/* Colors */}
       <div>
@@ -211,24 +358,26 @@ export default function BarcodeControls({
         </div>
       )}
 
-      {/* Margin */}
-      <div>
-        <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
-          </svg>
-          Margin (px)
-        </label>
-        <input
-          type="number"
-          min="0"
-          max="50"
-          step="1"
-          value={config.margin}
-          onChange={(e) => onChange({ margin: parseInt(e.target.value) || 10 })}
-          className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
-        />
-      </div>
+      {/* Margin - Only for non-QR codes */}
+      {config.type !== 'qrcode' && (
+        <div>
+          <label className="flex items-center gap-2 text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 8h16M4 16h16" />
+            </svg>
+            Margin (px)
+          </label>
+          <input
+            type="number"
+            min="0"
+            max="50"
+            step="1"
+            value={config.margin}
+            onChange={(e) => onChange({ margin: parseInt(e.target.value) || 10 })}
+            className="w-full px-4 py-2.5 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all"
+          />
+        </div>
+      )}
 
       {/* Export Format */}
       <div>

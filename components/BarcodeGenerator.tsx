@@ -36,6 +36,12 @@ export default function BarcodeGenerator() {
     lineColor: '#000000',
     margin: 10,
     format: 'png',
+    qrConfig: {
+      errorCorrectionLevel: 'M',
+      qrSize: 400,
+      dotType: 'square',
+      quietZone: 4,
+    },
   });
 
   const [barcodeDataUrl, setBarcodeDataUrl] = useState<string>('');
@@ -104,7 +110,21 @@ export default function BarcodeGenerator() {
 
 
   const handleConfigChange = (updates: Partial<BarcodeConfig>) => {
-    setConfig((prev) => ({ ...prev, ...updates }));
+    setConfig((prev) => {
+      const newConfig = { ...prev, ...updates };
+      
+      // Initialize QR config if switching to QR code
+      if (updates.type === 'qrcode' && !newConfig.qrConfig) {
+        newConfig.qrConfig = {
+          errorCorrectionLevel: 'M',
+          qrSize: 400,
+          dotType: 'square',
+          quietZone: 4,
+        };
+      }
+      
+      return newConfig;
+    });
   };
 
   const handleExport = async () => {
